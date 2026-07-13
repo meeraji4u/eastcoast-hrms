@@ -11,6 +11,7 @@ import Shifts from './pages/Shifts';
 import Devices from './pages/Devices';
 import Reports from './pages/Reports';
 import Payroll from './pages/Payroll';
+import SalaryApprovals from './pages/SalaryApprovals';
 import RoleMapping from './pages/RoleMapping';
 import UsersPage from './pages/Users';
 import useAuthStore from './store/authStore';
@@ -18,7 +19,7 @@ import useAuthStore from './store/authStore';
 const pages = {
   dashboard:Dashboard, employees:Employees, attendance:Attendance,
   leave:Leave, gatepass:GatePass, roster:Roster, shifts:Shifts,
-  devices:Devices, reports:Reports, payroll:Payroll, role_mapping:RoleMapping, users:UsersPage
+  devices:Devices, reports:Reports, payroll:Payroll, salary_approvals:SalaryApprovals, role_mapping:RoleMapping, users:UsersPage
 };
 
 export default function App() {

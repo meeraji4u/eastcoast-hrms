@@ -17,6 +17,8 @@ export default function Employees() {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState('');
   const [updating, setUpdating] = useState('');
+  const [salaryModal, setSalaryModal] = useState(null);
+  const [salaryForm, setSalaryForm] = useState({basic:0, hra:0});
 
   const load = async () => {
     setLoading(true); setError('');
@@ -49,6 +51,33 @@ export default function Employees() {
       setTimeout(() => setSyncMsg(''), 5000);
     } catch { setSyncMsg('❌ Sync failed'); }
     setSyncing(false);
+  };
+
+  
+  const handleSalarySubmit = async (e) => {
+    e.preventDefault();
+    const isRevision = salaryModal.basic_salary > 0;
+    const url = isRevision 
+      ? `/api/payroll/salary/${salaryModal.emp_code}/revision`
+      : `/api/payroll/salary/${salaryModal.emp_code}`;
+    
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('hrms_token')}` },
+        body: JSON.stringify({ basic_salary: salaryForm.basic, hra: salaryForm.hra })
+      });
+      if (res.ok) {
+        alert(isRevision ? "Salary revision submitted for approval!" : "Initial salary set!");
+        setSalaryModal(null);
+        load();
+      } else {
+        const d = await res.json();
+        alert(d.detail || 'Failed');
+      }
+    } catch(e) {
+      alert('Error saving salary');
+    }
   };
 
   const handleRoleChange = async (empCode, newRole) => {
@@ -129,7 +158,7 @@ export default function Employees() {
             <table style={{width:'100%',borderCollapse:'collapse',minWidth:800}}>
               <thead>
                 <tr style={{background:'#f8fafc'}}>
-                  {['Code','Name','Department','Designation','Status'].map(h=>(
+                  {['Code','Name','Department','Designation','Status','Salary'].map(h=>(
                     <th key={h} style={{padding:'11px 14px',textAlign:'left',fontSize:11.5,fontWeight:700,color:'#64748b',borderBottom:'1px solid #e6e9ef',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                   <th style={{ padding:'12px 16px', textAlign:'left', fontSize:12, fontWeight:700, color:'#64748b', borderBottom:'1px solid #e6e9ef' }}>
@@ -148,6 +177,21 @@ export default function Employees() {
                     <td style={td}>{emp.dept?<span style={{background:'#eff6ff',color:'#1d4ed8',padding:'2px 8px',borderRadius:6,fontSize:11,fontWeight:600}}>{emp.dept}</span>:'—'}</td>
                     <td style={{...td,color:'#64748b'}}>{emp.designation||'—'}</td>
                     <td style={td}><span style={{background:emp.status==='Working'||emp.status==='Active'?'#dcfce7':'#f1f5f9',color:emp.status==='Working'||emp.status==='Active'?'#15803d':'#64748b',padding:'2px 8px',borderRadius:6,fontSize:11,fontWeight:700}}>{emp.status||'Active'}</span></td>
+
+                    <td style={td}>
+                      {emp.basic_salary > 0 ? (
+                        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                          <span style={{fontWeight:600,color:'#0f172a'}}>₹{emp.basic_salary}</span>
+                          {(isAdmin || user?.role==='management') && (
+                            <button onClick={()=> { setSalaryModal(emp); setSalaryForm({basic:emp.basic_salary, hra:emp.hra||0}); }} style={{padding:'2px 8px',fontSize:11,background:'#f1f5f9',border:'1px solid #e2e8f0',borderRadius:4,cursor:'pointer',fontWeight:600,color:'#475569'}}>Revise</button>
+                          )}
+                        </div>
+                      ) : (
+                        (isAdmin || user?.role==='management') ? (
+                          <button onClick={()=> { setSalaryModal(emp); setSalaryForm({basic:0, hra:0}); }} style={{padding:'4px 10px',fontSize:11,background:'#eff6ff',border:'1px solid #bfdbfe',color:'#1d4ed8',borderRadius:6,cursor:'pointer',fontWeight:600}}>Set Salary</button>
+                        ) : <span style={{color:'#94a3b8'}}>-</span>
+                      )}
+                    </td>
                     <td style={td}>
                       {!role ? (
                         <span style={{color:'#94a3b8',fontSize:11}}>Not Synced</span>
@@ -182,6 +226,31 @@ export default function Employees() {
           </div>
         )}
       </div>
+
+      {salaryModal && (
+        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:100}}>
+          <div style={{background:'#fff',padding:24,borderRadius:12,width:320}}>
+            <h3 style={{marginTop:0,marginBottom:16,color:'#0f172a',fontSize:18}}>
+              {salaryModal.basic_salary > 0 ? 'Request Salary Revision' : 'Set Initial Salary'}
+            </h3>
+            <div style={{fontSize:13,color:'#64748b',marginBottom:20}}>{salaryModal.name} ({salaryModal.emp_code})</div>
+            <form onSubmit={handleSalarySubmit}>
+              <label style={{display:'block',fontSize:12,fontWeight:600,color:'#475569',marginBottom:4}}>Basic Salary</label>
+              <input type="number" required value={salaryForm.basic} onChange={e=>setSalaryForm({...salaryForm, basic:parseFloat(e.target.value)||0})} style={{width:'100%',padding:8,marginBottom:12,border:'1px solid #cbd5e1',borderRadius:6,boxSizing:'border-box'}}/>
+              
+              <label style={{display:'block',fontSize:12,fontWeight:600,color:'#475569',marginBottom:4}}>HRA</label>
+              <input type="number" required value={salaryForm.hra} onChange={e=>setSalaryForm({...salaryForm, hra:parseFloat(e.target.value)||0})} style={{width:'100%',padding:8,marginBottom:20,border:'1px solid #cbd5e1',borderRadius:6,boxSizing:'border-box'}}/>
+              
+              <div style={{display:'flex',justifyContent:'flex-end',gap:8}}>
+                <button type="button" onClick={()=>setSalaryModal(null)} style={{padding:'6px 12px',background:'#f1f5f9',border:'none',borderRadius:6,cursor:'pointer'}}>Cancel</button>
+                <button type="submit" style={{padding:'6px 12px',background:'#16a34a',color:'#fff',border:'none',borderRadius:6,cursor:'pointer',fontWeight:600}}>
+                  {salaryModal.basic_salary > 0 ? 'Submit Revision' : 'Save Salary'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

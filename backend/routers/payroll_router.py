@@ -18,6 +18,10 @@ class SalaryUpdate(BaseModel):
     basic_salary: float
     deductions: float = 0
 
+class SalarySetIn(BaseModel):
+    basic_salary: float
+    hra: float
+
 def _pr_dict(p):
     return {"id":p.id,"emp_code":p.emp_code,"emp_name":p.emp_name,"dept":p.dept,
             "month":p.month,"year":p.year,"present_days":p.present_days,
@@ -60,6 +64,10 @@ def generate_payroll(month: int = Query(...), year: int = Query(...),
             GROUP BY e.EmployeeCode, e.EmployeeName, dp.DepartmentFName
         """, [str(start_date), str(end_date)])
         created, updated = 0, 0
+        # Fetch all user salaries to avoid N+1 queries
+        users = db.query(User).all()
+        user_salaries = {u.emp_code: {"basic_salary": u.basic_salary, "hra": u.hra} for u in users}
+
         for r in rows:
             code = str(r["EmployeeCode"])
             p = db.query(Payroll).filter(Payroll.emp_code==code, Payroll.month==month, Payroll.year==year).first()
@@ -79,8 +87,13 @@ def generate_payroll(month: int = Query(...), year: int = Query(...),
             p.leave_days = int(r["leave_days"] or 0)
             p.work_hours = work_hours
             p.ot_hours = ot_hours
+            
+            # Fetch salary from user if not set
+            if not p.basic_salary and code in user_salaries:
+                p.basic_salary = user_salaries[code]["basic_salary"]
+
             # Recalculate if salary set
-            if p.basic_salary:
+            if getattr(p, 'basic_salary', 0):
                 days_in_month = 30
                 p.per_day = p.basic_salary / days_in_month
                 p.earned = p.per_day * p.present_days
@@ -102,6 +115,34 @@ class PayrollUpdate(BaseModel):
     basic_salary: Optional[float] = None
     deductions: Optional[float] = None
     hra: Optional[float] = None
+
+@router.post("/salary/{emp_code}")
+def set_initial_salary(emp_code: str, payload: SalarySetIn, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
+    if admin.role not in [RoleEnum.hr_admin, RoleEnum.management] and admin.role.value != "director":
+        raise HTTPException(403, "Not authorized to set salary")
+    u = db.query(User).filter(User.emp_code == emp_code).first()
+    if not u: raise HTTPException(404, "User not found")
+    if getattr(u, 'basic_salary', 0) > 0:
+        raise HTTPException(400, "Salary already set. Please request a revision instead.")
+    u.basic_salary = payload.basic_salary
+    u.hra = payload.hra
+    db.commit()
+    return {"message": "Initial salary set successfully."}
+
+@router.post("/salary/{emp_code}/revision")
+def request_salary_revision(emp_code: str, payload: SalarySetIn, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
+    u = db.query(User).filter(User.emp_code == emp_code).first()
+    if not u: raise HTTPException(404, "User not found")
+    req = SalaryRevisionRequest(
+        emp_code=emp_code,
+        basic_salary=payload.basic_salary,
+        hra=payload.hra,
+        status="PENDING",
+        requested_by=admin.id
+    )
+    db.add(req)
+    db.commit()
+    return {"message": "Salary revision request submitted successfully."}
 
 @router.put("/{payroll_id}/salary")
 def update_payroll(payroll_id: int, payload: PayrollUpdate, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
@@ -176,6 +217,12 @@ def approve_revision(req_id: int, db: Session = Depends(get_pg_db), admin: User 
     
     req.status = "APPROVED"
     req.approved_by = admin.id
+
+    # Update User master record
+    u = db.query(User).filter(User.emp_code == req.emp_code).first()
+    if u:
+        u.basic_salary = req.basic_salary
+        u.hra = getattr(req, 'hra', 0.0)
     
     # Apply the approved salary to the current active payroll month if it exists
     # Find the latest open payroll for this employee

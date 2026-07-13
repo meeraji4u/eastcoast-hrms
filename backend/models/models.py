@@ -34,6 +34,8 @@ class User(Base):
     fcm_token = Column(String(300))  # push notifications
     is_activated = Column(Boolean, default=False)
     must_change_password = Column(Boolean, default=True)
+    basic_salary = Column(Float, default=0.0)
+    hra = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     department = relationship("Department", back_populates="users", foreign_keys=[dept_id])

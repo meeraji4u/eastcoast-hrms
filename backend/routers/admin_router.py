@@ -69,7 +69,9 @@ def list_employees(db: Session = Depends(get_pg_db), admin: User = Depends(requi
     return [{"emp_code": u.emp_code, "name": u.name, "email": u.email,
              "role": u.role.value if u.role else "employee", "is_activated": u.is_activated,
              "is_active": u.is_active, "dept_id": u.dept_id,
-             "designation": u.designation} for u in users]
+             "designation": u.designation,
+             "basic_salary": getattr(u, 'basic_salary', 0.0),
+             "hra": getattr(u, 'hra', 0.0)} for u in users]
 
 class RoleUpdateIn(BaseModel):
     role: RoleEnum

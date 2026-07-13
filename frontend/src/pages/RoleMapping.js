@@ -113,6 +113,15 @@ export default function RoleMapping() {
     </div>
   );
 
+  if (user?.role !== 'it_admin') {
+    return (
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'80vh'}}>
+        <h2 style={{fontSize:24,fontWeight:800,color:'#0f172a'}}>Permission Denied</h2>
+        <p style={{color:'#64748b'}}>Only IT Administrators can access the System Role Mapping page.</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>

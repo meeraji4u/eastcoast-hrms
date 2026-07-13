@@ -42,6 +42,18 @@ def nightly_sync():
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=pg_engine)
+    
+    # Auto-migration for newly added columns
+    from sqlalchemy import text
+    try:
+        with pg_engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN basic_salary FLOAT DEFAULT 0.0;"))
+    except Exception: pass
+    try:
+        with pg_engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN hra FLOAT DEFAULT 0.0;"))
+    except Exception: pass
+
     threading.Thread(target=nightly_sync, daemon=True).start()
     logger.info("EastCoast HRMS v4 started. Nightly sync at 02:00.")
 

@@ -15,6 +15,7 @@ const navItems = [
   { key:'devices',    label:'Devices',     icon:Monitor,         roles:['hr_admin','it_admin'] },
   { key:'reports',    label:'Reports',     icon:FileText,        roles:['hr_admin','management','dept_head'] },
   { key:'payroll',    label:'Payroll',     icon:DollarSign,      roles:['hr_admin','management','employee'] },
+  { key:'salary_approvals', label:'Salary Approvals', icon:ClipboardList, roles:['management'] },
 ];
 
 export default function Sidebar({ active, onNavigate }) {
