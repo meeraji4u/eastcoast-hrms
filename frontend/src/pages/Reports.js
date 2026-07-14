@@ -26,7 +26,7 @@ const COLS = {
   'leave-summary':      ['emp_code','name','dept','leave_type','days'],
   'leave-entry':        ['emp_code','name','dept','date','leave_type','duration','remarks'],
   'outdoor-entry':      ['emp_code','name','date','out_time','expected_return','pass_type','reason','status'],
-  'monthly-status':     ['date','day','status','first_in','last_out','duration','late_by','early_by','ot','shift'],
+  'monthly-status':     ['emp_code','name','date','day','status','first_in','last_out','duration','late_by','early_by','ot','shift'],
 };
 
 const HDR = {
@@ -69,13 +69,13 @@ export default function Reports() {
     try {
       const params = new URLSearchParams();
       if (active === 'daily-attendance') params.append('att_date', filters.att_date);
-      if (['log-records', 'monthly-status'].includes(active)) params.append('emp_code', filters.emp_code || '1');
+      if (active === 'log-records') params.append('emp_code', filters.emp_code || '1');
       if (['attendance-summary','leave-summary','leave-entry','outdoor-entry','monthly-status'].includes(active)) {
         params.append('from_date', filters.from_date);
         params.append('to_date', filters.to_date);
       }
       if (filters.dept) params.append('dept', filters.dept);
-      if (filters.emp_code && !['log-records', 'monthly-status'].includes(active)) params.append('emp_code', filters.emp_code);
+      if (filters.emp_code && !['log-records'].includes(active)) params.append('emp_code', filters.emp_code);
       if (filters.search) params.append('search', filters.search);
 
       const r = await fetch(`${API}/reports/${active}?${params}`, { headers: auth() });
@@ -83,8 +83,19 @@ export default function Reports() {
       if (!r.ok) throw new Error(d.detail || 'Failed');
       
       if (active === 'monthly-status') {
-        setSummaryData(d);
-        setData(d.daily || []);
+        if (Array.isArray(d)) {
+          setSummaryData({ is_multi: true, total_employees: d.length });
+          let flattened = [];
+          d.forEach(emp => {
+            (emp.daily || []).forEach(day => {
+              flattened.push({ emp_code: emp.emp_code, name: emp.name, ...day });
+            });
+          });
+          setData(flattened);
+        } else {
+          setSummaryData(d);
+          setData(d.daily || []);
+        }
       } else {
         setSummaryData(null);
         setData(Array.isArray(d) ? d : []);
@@ -120,7 +131,7 @@ export default function Reports() {
   };
 
   const exportPDF = () => {
-    if (active === 'monthly-status' && summaryData) {
+    if (active === 'monthly-status' && summaryData && !summaryData.is_multi) {
       const doc = new jsPDF({ orientation: 'landscape' });
       
       doc.setFontSize(14);
@@ -279,10 +290,10 @@ export default function Reports() {
             </>}
 
             {['log-records', 'monthly-status'].includes(active) && (
-              <div style={fld}><label style={lbl}>Employee Code *</label><input placeholder="e.g. 1047" value={filters.emp_code} onChange={e=>setFilters(p=>({...p,emp_code:e.target.value}))} style={inp}/></div>
+              <div style={fld}><label style={lbl}>Employee Code {active === 'log-records' ? '*' : ''}</label><input placeholder="e.g. 1047" value={filters.emp_code} onChange={e=>setFilters(p=>({...p,emp_code:e.target.value}))} style={inp}/></div>
             )}
 
-            {!['log-records', 'outdoor-entry', 'monthly-status'].includes(active) && (
+            {!['log-records', 'outdoor-entry'].includes(active) && (
               <div style={fld}>
                 <label style={lbl}>Department</label>
                 <select value={filters.dept} onChange={e=>setFilters(p=>({...p,dept:e.target.value}))} style={inp}>

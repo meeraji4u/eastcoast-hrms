@@ -279,79 +279,96 @@ def outdoor_entry(
     finally:
         db.close()
 
-# ── Monthly Status Report ────────────────────────────────────────────────
+# ── Monthly Status Report (Detailed Daily) ──────────────────────────────────
 @router.get("/monthly-status")
-def monthly_status(
-    emp_code: str = Query(...),
+def get_monthly_status(
     from_date: str = Query(...),
     to_date: str = Query(...),
+    emp_code: Optional[str] = None,
+    dept: Optional[str] = None,
     user: User = Depends(require_admin_or_head)
 ):
+    from datetime import date
     from services.attendance import get_attendance_from_logs
     try:
+        filters = "WHERE e.RecordStatus=1"
+        params = []
+        if emp_code:
+            filters += " AND e.EmployeeCode = ?"
+            params.append(emp_code)
+        if dept:
+            filters += " AND dp.DepartmentFName = ?"
+            params.append(dept)
+
         emp_rows = essl_query(f"""
             SELECT e.EmployeeCode, e.EmployeeName, dp.DepartmentFName AS dept, e.Designation
             FROM Employees e
             LEFT JOIN Departments dp ON dp.DepartmentId=e.DepartmentId
-            WHERE e.EmployeeCode = ?
-        """, [emp_code])
+            {filters}
+            ORDER BY dp.DepartmentFName, e.EmployeeName
+        """, params)
+        
         if not emp_rows:
-            return JSONResponse(status_code=404, content={"detail": "Employee not found"})
-        emp = emp_rows[0]
+            return JSONResponse(status_code=404, content={"detail": "No employees found"})
 
         fd = date.fromisoformat(from_date)
         td = date.fromisoformat(to_date)
-        daily = get_attendance_from_logs(emp_code, fd, td)
+        results = []
+        for emp in emp_rows:
+            daily = get_attendance_from_logs(emp["EmployeeCode"], fd, td)
+            
+            present = sum(1 for d in daily if d["status"] == "P")
+            absent = sum(1 for d in daily if d["status"] == "A")
+            woff = sum(1 for d in daily if d["status"] == "WO")
+            holiday = sum(1 for d in daily if d["status"] == "H")
+            on_leave = sum(1 for d in daily if d["status"] == "L")
+            
+            total_min = 0
+            late_min = 0
+            early_min = 0
+            for d in daily:
+                if d["duration"] and d["duration"] != "00:00" and d["duration"] != "—":
+                    try:
+                        h, m = map(int, d["duration"].split(":"))
+                        total_min += h * 60 + m
+                    except: pass
+                if d.get("late_by") and d["late_by"] != "00:00" and d["late_by"] != "—":
+                    try:
+                        h, m = map(int, d["late_by"].split(":"))
+                        late_min += h * 60 + m
+                    except: pass
+                if d.get("early_by") and d["early_by"] != "00:00" and d["early_by"] != "—":
+                    try:
+                        h, m = map(int, d["early_by"].split(":"))
+                        early_min += h * 60 + m
+                    except: pass
 
-        present = sum(1 for d in daily if d["status"] == "P")
-        absent = sum(1 for d in daily if d["status"] == "A")
-        woff = sum(1 for d in daily if d["status"] == "WO")
-        holiday = sum(1 for d in daily if d["status"] == "H")
-        on_leave = sum(1 for d in daily if d["status"] == "L")
-        
-        total_min = 0
-        late_min = 0
-        early_min = 0
+            total_hrs = f"{total_min // 60:02d}:{total_min % 60:02d}"
+            avg_min = total_min // present if present > 0 else 0
+            avg_hrs = f"{avg_min // 60:02d}:{avg_min % 60:02d}"
+            late_hrs = f"{late_min // 60:02d}:{late_min % 60:02d}"
+            early_hrs = f"{early_min // 60:02d}:{early_min % 60:02d}"
 
-        for d in daily:
-            if d["duration"] and d["duration"] != "00:00" and d["duration"] != "—":
-                try:
-                    h, m = map(int, d["duration"].split(":"))
-                    total_min += h * 60 + m
-                except: pass
-            if d.get("late_by") and d["late_by"] != "00:00" and d["late_by"] != "—":
-                try:
-                    h, m = map(int, d["late_by"].split(":"))
-                    late_min += h * 60 + m
-                except: pass
-            if d.get("early_by") and d["early_by"] != "00:00" and d["early_by"] != "—":
-                try:
-                    h, m = map(int, d["early_by"].split(":"))
-                    early_min += h * 60 + m
-                except: pass
-
-        total_hrs = f"{total_min // 60:02d}:{total_min % 60:02d}"
-        avg_min = total_min // present if present > 0 else 0
-        avg_hrs = f"{avg_min // 60:02d}:{avg_min % 60:02d}"
-        late_hrs = f"{late_min // 60:02d}:{late_min % 60:02d}"
-        early_hrs = f"{early_min // 60:02d}:{early_min % 60:02d}"
-
-        return {
-            "emp_code": emp["EmployeeCode"],
-            "name": emp["EmployeeName"],
-            "dept": emp["dept"] or "",
-            "designation": emp["Designation"] or "",
-            "present": present,
-            "absent": absent,
-            "weekly_off": woff,
-            "holidays": holiday,
-            "on_leave": on_leave,
-            "total_duration": total_hrs,
-            "late_by_hrs": late_hrs,
-            "early_by_hrs": early_hrs,
-            "avg_working_hrs": avg_hrs,
-            "daily": daily
-        }
+            results.append({
+                "emp_code": emp["EmployeeCode"],
+                "name": emp["EmployeeName"],
+                "dept": emp["dept"] or "",
+                "designation": emp["Designation"] or "",
+                "present": present,
+                "absent": absent,
+                "weekly_off": woff,
+                "holidays": holiday,
+                "on_leave": on_leave,
+                "total_duration": total_hrs,
+                "late_by_hrs": late_hrs,
+                "early_by_hrs": early_hrs,
+                "avg_working_hrs": avg_hrs,
+                "daily": daily
+            })
+            
+        if emp_code and len(results) == 1:
+            return results[0]
+        return results
     except Exception as e:
         return JSONResponse(status_code=500, content={"detail":str(e)})
 
