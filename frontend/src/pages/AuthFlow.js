@@ -28,14 +28,15 @@ const OtpInput = ({value,onChange,length=6}) => {
 const Shell = ({children}) => (
   <div style={{minHeight:"100vh",display:"flex",position:"relative",overflow:"hidden"}}>
     <style>{".spin{animation:spin 0.8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}"}</style>
-    <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,#0b3f3b 0%,#115e59 40%,#0f4c81 100%)"}}/>
+    <div style={{position:"absolute",inset:0,background:"url(/hospital_banner.png) center/cover no-repeat"}}/>
+    <div style={{position:"absolute",inset:0,background:"linear-gradient(135deg,rgba(11,63,59,0.85) 0%,rgba(17,94,89,0.7) 40%,rgba(15,76,129,0.85) 100%)"}}/>
     <div style={{position:"absolute",top:-100,right:-100,width:400,height:400,borderRadius:"50%",background:"rgba(255,255,255,0.04)"}}/>
     <div style={{position:"absolute",bottom:-150,left:-100,width:500,height:500,borderRadius:"50%",background:"rgba(255,255,255,0.03)"}}/>
     <div style={{position:"relative",zIndex:1,display:"flex",width:"100%",minHeight:"100vh"}}>
       <div style={{flex:"0 0 45%",display:"flex",flexDirection:"column",justifyContent:"space-between",padding:"48px 52px",color:"#fff"}}>
         <div>
           <div style={{marginBottom:40}}>
-            <img src={ECHL_LOGO} alt="East Coast Hospitals" style={{width:220,height:"auto",display:"block",filter:"brightness(0) invert(1)"}}/>
+            <img src="/logo.png" alt="East Coast Hospitals" style={{width:220,height:"auto",display:"block",filter:"brightness(0) invert(1)"}}/>
             <div style={{fontWeight:600,fontSize:11,color:"rgba(255,255,255,0.5)",letterSpacing:"0.1em",textTransform:"uppercase",marginTop:10}}>HRMS Portal</div>
           </div>
           <h1 style={{fontSize:32,fontWeight:900,lineHeight:1.2,letterSpacing:"-0.02em",marginBottom:20}}>One system for<br/><span style={{color:"rgba(255,255,255,0.65)"}}>your entire workforce.</span></h1>
