@@ -106,6 +106,15 @@ def update_shift(shift_id: int, payload: ShiftIn, db: Session = Depends(get_pg_d
     db.commit()
     return {"message": "Shift updated"}
 
+class BulkDeleteIn(BaseModel):
+    ids: list[int]
+
+@router.post("/bulk-delete")
+def bulk_delete_shifts(payload: BulkDeleteIn, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
+    db.query(Shift).filter(Shift.id.in_(payload.ids)).delete(synchronize_session=False)
+    db.commit()
+    return {"message": f"Deleted {len(payload.ids)} shifts"}
+
 @router.delete("/{shift_id}")
 def delete_shift(shift_id: int, db: Session = Depends(get_pg_db),
                   user: User = Depends(require_admin_or_head)):

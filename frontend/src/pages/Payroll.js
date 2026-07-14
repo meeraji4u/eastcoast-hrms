@@ -129,6 +129,26 @@ export default function Payroll() {
     } catch {}
   };
 
+  
+  const toggleSelect = (id) => {
+    const next = new Set(selectedPayroll);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedPayroll(next);
+  };
+  const toggleAll = (e) => {
+    if (e.target.checked) setSelectedPayroll(new Set(payroll.map(r => r.id)));
+    else setSelectedPayroll(new Set());
+  };
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedPayroll.size} payroll entries?`)) return;
+    try {
+      await fetch('/api/payroll/bulk-delete', { method:'POST', headers:{'Content-Type':'application/json', ...auth()}, body:JSON.stringify({ids:Array.from(selectedPayroll)}) });
+      setSelectedPayroll(new Set());
+      load();
+    } catch(e) {}
+  };
+
   const handleGenerate = async () => {
     setGenerating(true); setMsg('');
     try {

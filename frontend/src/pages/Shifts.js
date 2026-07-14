@@ -13,6 +13,7 @@ export default function Shifts() {
   const { user } = useAuthStore();
   const canEdit = ['hr_admin','dept_head'].includes(user?.role);
   const [shifts, setShifts] = useState([]);
+  const [selectedShifts, setSelectedShifts] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -33,6 +34,22 @@ export default function Shifts() {
 
   const openAdd = () => { setEditing(null); setForm({ name:'', code:'', start_time:'09:00', end_time:'17:00', working_hours:8, grace_late:15, grace_early:15, is_night:false }); setMsg(''); setShowModal(true); };
   const openEdit = (s) => { if(s.source==='essl') return; setEditing(s); setForm({ name:s.name, code:s.code, start_time:s.start_time, end_time:s.end_time, working_hours:s.working_hours, grace_late:s.grace_late, grace_early:s.grace_early, is_night:s.is_night }); setMsg(''); setShowModal(true); };
+
+  
+  const toggleSelect = (id) => {
+    const next = new Set(selectedShifts);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelectedShifts(next);
+  };
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Delete ${selectedShifts.size} shifts?`)) return;
+    try {
+      await fetch('/api/shifts/bulk-delete', { method:'POST', headers:{'Content-Type':'application/json', ...auth()}, body:JSON.stringify({ids:Array.from(selectedShifts)}) });
+      setSelectedShifts(new Set());
+      load();
+    } catch(e) {}
+  };
 
   const handleSave = async (e) => {
     e.preventDefault(); setSaving(true); setMsg('');
@@ -69,7 +86,7 @@ export default function Shifts() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
         {loading ? <div style={{ color:'#94a3b8', padding:40 }}>Loading shifts...</div> :
           shifts.map(s => (
-            <div key={s.id} style={{ background:'#fff', borderRadius:12, border:'1px solid #e6e9ef', padding:'20px 22px', position:'relative' }}>
+            <div key={s.id} onClick={()=>canEdit && toggleSelect(s.id)} style={{position:'relative', cursor:canEdit?'pointer':'default', outline:selectedShifts.has(s.id)?'2px solid #10b981':'none', ...({{ background:'#fff', borderRadius:12, border:'1px solid #e6e9ef', padding:'20px 22px', position:'relative' }}>
               <div style={{ position:'absolute', top:12, right:12, display:'flex', gap:6, alignItems:'center' }}>
                 <span style={{ background: s.source==='essl'?'#dbeafe':'#f0fdf4', color: s.source==='essl'?'#1d4ed8':'#15803d', padding:'2px 8px', borderRadius:6, fontSize:10, fontWeight:700 }}>
                   {s.source==='essl'?'eSSL':'HRMS'}

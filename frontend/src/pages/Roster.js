@@ -17,6 +17,7 @@ export default function Roster() {
   const [shifts, setShifts] = useState([]);
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRoster, setSelectedRoster] = useState(new Set());
   const [showModal, setShowModal] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [mode, setMode] = useState('week');

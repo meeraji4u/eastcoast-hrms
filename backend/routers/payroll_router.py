@@ -144,6 +144,15 @@ def request_salary_revision(emp_code: str, payload: SalarySetIn, db: Session = D
     db.commit()
     return {"message": "Salary revision request submitted successfully."}
 
+class BulkDeleteIn(BaseModel):
+    ids: list[int]
+
+@router.post("/bulk-delete")
+def bulk_delete_payroll(payload: BulkDeleteIn, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
+    db.query(Payroll).filter(Payroll.id.in_(payload.ids), Payroll.status != "finalized").delete(synchronize_session=False)
+    db.commit()
+    return {"message": f"Deleted requested payroll entries"}
+
 @router.put("/{payroll_id}/salary")
 def update_payroll(payroll_id: int, payload: PayrollUpdate, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
     p = db.query(Payroll).filter(Payroll.id==payroll_id).first()

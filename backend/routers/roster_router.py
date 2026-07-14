@@ -156,6 +156,15 @@ def get_roster(from_date: str = None, to_date: str = None, dept: str = None,
         "notes": e.notes,
     } for e in entries]
 
+class BulkDeleteIn(BaseModel):
+    ids: list[int]
+
+@router.post("/bulk-delete")
+def bulk_delete_roster(payload: BulkDeleteIn, db: Session = Depends(get_pg_db), admin: User = Depends(require_admin)):
+    db.query(DutyRoster).filter(DutyRoster.id.in_(payload.ids)).delete(synchronize_session=False)
+    db.commit()
+    return {"message": f"Deleted {len(payload.ids)} roster entries"}
+
 @router.delete("/{roster_id}")
 def delete_roster(roster_id: int, db: Session = Depends(get_pg_db),
                    user: User = Depends(require_admin_or_head)):

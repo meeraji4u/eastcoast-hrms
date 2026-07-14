@@ -25,11 +25,9 @@ export default function Sidebar({ active, onNavigate }) {
 
   return (
     <div style={{ width:collapsed?64:220, minHeight:'100vh', background:'linear-gradient(180deg,#0b3f3b 0%,#115e59 100%)', display:'flex', flexDirection:'column', transition:'width 0.2s', flexShrink:0, position:'relative' }}>
-      <div style={{ padding:collapsed?'20px 15px':'20px 18px', display:'flex', alignItems:'center', gap:10, borderBottom:'1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ width:34, height:34, borderRadius:9, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-          <Building2 size={18} color="#fff"/>
-        </div>
-        {!collapsed && <div><div style={{ fontWeight:800, fontSize:14, color:'#fff' }}>EastCoast</div><div style={{ fontSize:10, color:'rgba(255,255,255,0.6)' }}>HRMS</div></div>}
+      <div style={{ padding:collapsed?'15px 0':'15px 18px', display:'flex', alignItems:'center', justifyContent:collapsed?'center':'flex-start', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>
+        <img src="/logo.png" alt="EastCoast Hospitals" style={{ height: collapsed ? 24 : 36, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+      </div>}
       </div>
       <nav style={{ flex:1, padding:'10px 0', overflowY:'auto' }}>
         {allowed.map(item => {
