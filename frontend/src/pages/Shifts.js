@@ -86,7 +86,7 @@ export default function Shifts() {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:16 }}>
         {loading ? <div style={{ color:'#94a3b8', padding:40 }}>Loading shifts...</div> :
           shifts.map(s => (
-            <div key={s.id} onClick={()=>canEdit && toggleSelect(s.id)} style={{position:'relative', cursor:canEdit?'pointer':'default', outline:selectedShifts.has(s.id)?'2px solid #10b981':'none', ...({{ background:'#fff', borderRadius:12, border:'1px solid #e6e9ef', padding:'20px 22px', position:'relative' }}>
+            <div key={s.id} onClick={(e)=>{ if(e.target.tagName!=='BUTTON' && e.target.closest('button')==null && canEdit) toggleSelect(s.id); }} style={{ cursor:canEdit?'pointer':'default', outline:selectedShifts.has(s.id)?'2px solid #10b981':'none', background:'#fff', borderRadius:12, border:'1px solid #e6e9ef', padding:'20px 22px', position:'relative' }}>
               <div style={{ position:'absolute', top:12, right:12, display:'flex', gap:6, alignItems:'center' }}>
                 <span style={{ background: s.source==='essl'?'#dbeafe':'#f0fdf4', color: s.source==='essl'?'#1d4ed8':'#15803d', padding:'2px 8px', borderRadius:6, fontSize:10, fontWeight:700 }}>
                   {s.source==='essl'?'eSSL':'HRMS'}
