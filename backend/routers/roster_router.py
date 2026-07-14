@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, timedelta
 from core.database import get_pg_db, Base, pg_engine, essl_query
-from services.auth import get_current_user, require_admin_or_head
+from services.auth import get_current_user, require_admin_or_head, require_admin
 from models.models import User, RoleEnum
 
 class DutyRoster(Base):

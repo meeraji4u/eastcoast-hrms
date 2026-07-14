@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date
 from core.database import get_pg_db, essl_query
-from services.auth import get_current_user, require_admin_or_head
+from services.auth import get_current_user, require_admin_or_head, require_admin
 from models.models import User, Shift, ShiftAssignment, RoleEnum
 
 router = APIRouter(prefix="/api/shifts", tags=["Shifts"])
