@@ -142,7 +142,8 @@ def _compute_from_device_logs(emp_code: str, from_date: date, to_date: date) -> 
         by_day.setdefault(day, []).append(log_dt)
 
     from core.database import PgSession
-    from models.models import DutyRoster, Shift
+    from models.models import Shift
+    from routers.roster_router import DutyRoster
     
     db = PgSession()
     rosters = db.query(DutyRoster).filter(
