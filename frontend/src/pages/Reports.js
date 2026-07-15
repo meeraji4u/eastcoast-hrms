@@ -49,6 +49,7 @@ export default function Reports() {
   const [active, setActive] = useState('daily-attendance');
   const [data, setData] = useState([]);
   const [summaryData, setSummaryData] = useState(null);
+  const [rawSummaryData, setRawSummaryData] = useState(null);
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -85,6 +86,7 @@ export default function Reports() {
       if (active === 'monthly-status') {
         if (Array.isArray(d)) {
           setSummaryData({ is_multi: true, total_employees: d.length });
+          setRawSummaryData(d);
           let flattened = [];
           d.forEach(emp => {
             (emp.daily || []).forEach(day => {
@@ -94,10 +96,12 @@ export default function Reports() {
           setData(flattened);
         } else {
           setSummaryData(d);
+          setRawSummaryData([d]);
           setData(d.daily || []);
         }
       } else {
         setSummaryData(null);
+        setRawSummaryData(null);
         setData(Array.isArray(d) ? d : []);
       }
     } catch (e) { setError(e.message); setData([]); }
@@ -131,76 +135,80 @@ export default function Reports() {
   };
 
   const exportPDF = () => {
-    if (active === 'monthly-status' && summaryData && !summaryData.is_multi) {
+    if (active === 'monthly-status' && rawSummaryData) {
       const doc = new jsPDF({ orientation: 'landscape' });
       
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text('Monthly Status Report (Detailed Work Duration)', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-      
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      doc.text(`${filters.from_date} To ${filters.to_date}`, doc.internal.pageSize.width / 2, 22, { align: 'center' });
-      
-      doc.setFontSize(9);
-      doc.text(`Company: EastCoast HRMS`, 14, 32);
-      doc.text(`Printed On : ${new Date().toLocaleString()}`, doc.internal.pageSize.width - 14, 32, { align: 'right' });
-      
-      doc.setLineWidth(0.5);
-      doc.line(14, 35, doc.internal.pageSize.width - 14, 35);
-      
-      doc.setFont("helvetica", "bold");
-      doc.text(`Department:`, 14, 43);
-      doc.setFont("helvetica", "normal");
-      doc.text(`${summaryData.dept || '—'}`, 35, 43);
-      
-      doc.setFont("helvetica", "bold");
-      doc.text(`Employee:`, 14, 51);
-      doc.setFont("helvetica", "normal");
-      doc.text(`${summaryData.emp_code} : ${summaryData.name || ''}`, 35, 51);
-      
-      const metricsText = `Total Work Duration: ${summaryData.total_duration} Hrs. Present: ${summaryData.present} Absent: ${summaryData.absent} WeeklyOff: ${summaryData.weekly_off} Holidays: ${summaryData.holidays} Leaves Taken: ${summaryData.on_leave}\nAverage Working Hrs: ${summaryData.avg_working_hrs}`;
-      doc.text(metricsText, 90, 51);
-
-      const dayHeaders = ['Days'];
-      const statusRow = ['Status'];
-      const inTimeRow = ['InTime'];
-      const outTimeRow = ['OutTime'];
-      const durRow = ['Duration'];
-      const lateRow = ['Late By'];
-      const earlyRow = ['Early By'];
-      const otRow = ['OT'];
-      const shiftRow = ['Shift'];
-
-      data.forEach(d => {
-        const dNum = new Date(d.date).getDate().toString().padStart(2, '0');
-        const dDay = d.day.charAt(0);
-        dayHeaders.push(`${dNum} ${dDay}`);
+      rawSummaryData.forEach((empData, index) => {
+        if (index > 0) doc.addPage();
         
-        statusRow.push(d.status || '');
-        inTimeRow.push(d.first_in === '—' ? '' : (d.first_in || '').slice(11, 16));
-        outTimeRow.push(d.last_out === '—' ? '' : (d.last_out || '').slice(11, 16));
-        durRow.push(d.duration === '00:00' ? '' : d.duration);
-        lateRow.push(d.late_by === '00:00' ? '' : d.late_by);
-        earlyRow.push(d.early_by === '00:00' ? '' : d.early_by);
-        otRow.push(d.ot === '00:00' ? '' : d.ot);
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text('Monthly Status Report (Detailed Work Duration)', doc.internal.pageSize.width / 2, 15, { align: 'center' });
         
-        let sName = d.shift || '';
-        shiftRow.push(sName.substring(0, 8));
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${filters.from_date} To ${filters.to_date}`, doc.internal.pageSize.width / 2, 22, { align: 'center' });
+        
+        doc.setFontSize(9);
+        doc.text(`Company: EastCoast HRMS`, 14, 32);
+        doc.text(`Printed On : ${new Date().toLocaleString()}`, doc.internal.pageSize.width - 14, 32, { align: 'right' });
+        
+        doc.setLineWidth(0.5);
+        doc.line(14, 35, doc.internal.pageSize.width - 14, 35);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text(`Department:`, 14, 43);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${empData.dept || '—'}`, 35, 43);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text(`Employee:`, 14, 51);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${empData.emp_code} : ${empData.name || ''}`, 35, 51);
+        
+        const metricsText = `Total Work Duration: ${empData.total_duration} Hrs. Present: ${empData.present} Absent: ${empData.absent} WeeklyOff: ${empData.weekly_off} Holidays: ${empData.holidays} Leaves Taken: ${empData.on_leave}\nAverage Working Hrs: ${empData.avg_working_hrs}`;
+        doc.text(metricsText, 90, 51);
+
+        const dayHeaders = ['Days'];
+        const statusRow = ['Status'];
+        const inTimeRow = ['InTime'];
+        const outTimeRow = ['OutTime'];
+        const durRow = ['Duration'];
+        const lateRow = ['Late By'];
+        const earlyRow = ['Early By'];
+        const otRow = ['OT'];
+        const shiftRow = ['Shift'];
+
+        (empData.daily || []).forEach(d => {
+          const dNum = new Date(d.date).getDate().toString().padStart(2, '0');
+          const dDay = d.day.charAt(0);
+          dayHeaders.push(`${dNum} ${dDay}`);
+          
+          statusRow.push(d.status || '');
+          inTimeRow.push(d.first_in === '—' ? '' : (d.first_in || '').slice(11, 16));
+          outTimeRow.push(d.last_out === '—' ? '' : (d.last_out || '').slice(11, 16));
+          durRow.push(d.duration === '00:00' ? '' : d.duration);
+          lateRow.push(d.late_by === '00:00' ? '' : d.late_by);
+          earlyRow.push(d.early_by === '00:00' ? '' : d.early_by);
+          otRow.push(d.ot === '00:00' ? '' : d.ot);
+          
+          let sName = d.shift || '';
+          shiftRow.push(sName.substring(0, 8));
+        });
+
+        autoTable(doc, {
+          startY: 62,
+          head: [dayHeaders],
+          body: [ statusRow, inTimeRow, outTimeRow, durRow, lateRow, earlyRow, otRow, shiftRow ],
+          theme: 'grid',
+          styles: { fontSize: 6.5, cellPadding: 1, halign: 'center', lineWidth: 0.1, lineColor: [150, 150, 150] },
+          columnStyles: { 0: { fontStyle: 'bold', halign: 'left', cellWidth: 16 } },
+          headStyles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold' },
+          margin: { left: 10, right: 10 }
+        });
       });
 
-      autoTable(doc, {
-        startY: 62,
-        head: [dayHeaders],
-        body: [ statusRow, inTimeRow, outTimeRow, durRow, lateRow, earlyRow, otRow, shiftRow ],
-        theme: 'grid',
-        styles: { fontSize: 6.5, cellPadding: 1, halign: 'center', lineWidth: 0.1, lineColor: [150, 150, 150] },
-        columnStyles: { 0: { fontStyle: 'bold', halign: 'left', cellWidth: 16 } },
-        headStyles: { fillColor: [248, 250, 252], textColor: [15, 23, 42], fontStyle: 'bold' },
-        margin: { left: 10, right: 10 }
-      });
-
-      doc.save(`MonthlyStatus_${summaryData.emp_code}_${filters.from_date}.pdf`);
+      doc.save(`MonthlyStatus_${summaryData.is_multi ? 'All' : summaryData.emp_code}_${filters.from_date}.pdf`);
       return;
     }
 
