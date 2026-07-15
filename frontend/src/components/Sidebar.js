@@ -26,7 +26,7 @@ export default function Sidebar({ active, onNavigate }) {
   return (
     <div style={{ width:collapsed?64:220, minHeight:'100vh', background:'linear-gradient(180deg,#0b3f3b 0%,#115e59 100%)', display:'flex', flexDirection:'column', transition:'width 0.2s', flexShrink:0, position:'relative' }}>
       <div style={{ padding:collapsed?'15px 0':'15px 18px', display:'flex', alignItems:'center', justifyContent:collapsed?'center':'flex-start', borderBottom:'1px solid rgba(255,255,255,0.1)' }}>
-        <img src="/logo.png" alt="EastCoast Hospitals" style={{ height: collapsed ? 32 : 48, objectFit: 'contain', filter: 'brightness(0) invert(1)' }} />
+        <img src="/logo.png" alt="EastCoast Hospitals" style={{ height:collapsed?40:64, width:'auto', filter:'brightness(0) invert(1)', transition:'height 0.2s' }} />
       </div>
       <nav style={{ flex:1, padding:'10px 0', overflowY:'auto' }}>
         {allowed.map(item => {

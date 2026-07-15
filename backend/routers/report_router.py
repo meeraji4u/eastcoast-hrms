@@ -291,7 +291,7 @@ def get_monthly_status(
     from datetime import date
     from services.attendance import get_attendance_from_logs
     try:
-        filters = "WHERE e.RecordStatus=1"
+        filters = "WHERE e.RecordStatus=1 AND e.Status='Working'"
         params = []
         if emp_code:
             filters += " AND e.EmployeeCode = ?"
