@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Clock, TrendingUp, AlertCircle, Activity, Calendar, ClipboardList, DollarSign, QrCode, CalendarDays, RefreshCw, Monitor, Shield } from 'lucide-react';
+import { Users, UserCheck, UserX, Clock, TrendingUp, AlertCircle, Activity, Calendar, ClipboardList, DollarSign, QrCode, CalendarDays, RefreshCw, Monitor, Shield, User } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { attendanceApi } from '../utils/api';
 import useAuthStore from '../store/authStore';
