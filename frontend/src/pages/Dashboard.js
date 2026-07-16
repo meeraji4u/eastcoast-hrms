@@ -261,14 +261,6 @@ function DeptHeadDashboard({stats,loading,onNavigate}) {
           </div>
         </div>
       </div>
-      {debugInfo && (
-        <div style={{ marginTop: 24, padding: 20, background: '#fef2f2', border: '1px solid #f87171', borderRadius: 12 }}>
-          <h3 style={{ color: '#b91c1c', marginBottom: 12 }}>eSSL Database Debug Info</h3>
-          <pre style={{ fontSize: 11, background: '#fff', padding: 12, borderRadius: 8, overflowX: 'auto' }}>
-            {JSON.stringify(debugInfo, null, 2)}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }
@@ -286,7 +278,7 @@ function EmployeeDashboard({onNavigate, stats, loading}) {
   return (
     <div>
       <div style={{marginBottom:28}}>
-        <h1 style={{fontSize:22,fontWeight:800,color:'#0b1320'}}>{greeting}, {user?.name?.split(' ')[0]}!</h1>
+        <h1 style={{fontSize:22,fontWeight:800,color:'#0b1320'}}>{greeting}, {(user?.name || '').split(' ')[0]}!</h1>
         <p style={{color:'#64748b',fontSize:14,marginTop:4}}>{now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
       </div>
       <div style={{background:'linear-gradient(135deg,#115e59,#1d4ed8)',borderRadius:16,padding:'24px 28px',color:'#fff',marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}>

@@ -22,7 +22,11 @@ const pages = {
   devices:Devices, reports:Reports, payroll:Payroll, salary_approvals:SalaryApprovals, role_mapping:RoleMapping, users:UsersPage
 };
 
-export default function App() {
+class ErrorBoundary extends React.Component { constructor(props) { super(props); this.state = { error: null }; } static getDerivedStateFromError(error) { return { error }; } render() { if (this.state.error) { return <div style={{padding:20,color:'red'}}><h1>Fatal Error</h1><pre>{this.state.error.stack}</pre></div>; } return this.props.children; } }
+
+export default function AppWrapper() { return <ErrorBoundary><App /></ErrorBoundary>; }
+
+function App() {
   const { user, setAuth } = useAuthStore();
   const [page, setPage] = useState('dashboard');
 
