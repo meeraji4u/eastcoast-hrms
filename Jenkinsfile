@@ -15,6 +15,10 @@ pipeline {
                     
                     # Deploy using docker compose
                     cd /opt/eastcoast-hrms
+                    
+                    # Force remove any existing containers that might have been spun up from manual git testing
+                    docker rm -f hrms-postgres hrms-redis hrms-backend hrms-frontend || true
+                    
                     docker compose up -d --build frontend backend
                     
                     echo "Deployment Successful!"
