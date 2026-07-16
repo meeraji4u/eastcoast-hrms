@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import StreamingResponse, JSONResponse
 from datetime import date, datetime, timedelta
 from typing import Optional
-from services.auth import get_current_user, require_admin_or_head
+from services.auth import get_current_user, require_management
 from core.database import essl_query, essl_query_one
 from models.models import User, RoleEnum
 import io, logging
@@ -36,7 +36,7 @@ def safe_time(v):
 def daily_attendance(
     att_date: str = Query(None),
     dept: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     d = att_date or date.today().isoformat()
     tbl = f"DeviceLogs_{datetime.fromisoformat(d).month}_{datetime.fromisoformat(d).year}"
@@ -75,7 +75,7 @@ def attendance_summary(
     to_date: str = Query(None),
     dept: Optional[str] = None,
     search: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     today = date.today()
     fd = from_date or date(today.year, today.month, 1).isoformat()
@@ -125,7 +125,7 @@ def employee_details(
     search: Optional[str] = None,
     dept: Optional[str] = None,
     status: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     effective_dept = resolve_dept(user, dept)
     filters = "WHERE e.RecordStatus=1"
@@ -187,7 +187,7 @@ def leave_summary(
     from_date: str = Query(None),
     to_date: str = Query(None),
     dept: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     today = date.today()
     fd = from_date or date(today.year, 1, 1).isoformat()
@@ -223,7 +223,7 @@ def leave_entry(
     from_date: str = Query(None),
     to_date: str = Query(None),
     emp_code: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     today = date.today()
     fd = from_date or date(today.year, today.month, 1).isoformat()
@@ -260,7 +260,7 @@ def outdoor_entry(
     from_date: str = Query(None),
     to_date: str = Query(None),
     dept: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     # Pull from HRMS gate_passes table
     from core.database import get_pg_db, PgSession
@@ -299,7 +299,7 @@ def get_monthly_status(
     to_date: str = Query(...),
     emp_code: Optional[str] = None,
     dept: Optional[str] = None,
-    user: User = Depends(require_admin_or_head)
+    user: User = Depends(require_management)
 ):
     from datetime import date
     from services.attendance import get_attendance_from_logs

@@ -13,7 +13,7 @@ const navItems = [
   { key:'roster',     label:'Duty Roster', icon:CalendarDays,    roles:['hr_admin','dept_head'] },
   { key:'shifts',     label:'Shifts',      icon:Clock,           roles:['hr_admin','dept_head'] },
   { key:'devices',    label:'Devices',     icon:Monitor,         roles:['hr_admin','it_admin'] },
-  { key:'reports',    label:'Reports',     icon:FileText,        roles:['hr_admin','management','dept_head'] },
+  { key:'reports',    label:'Reports',     icon:FileText,        roles:['hr_admin','management'] },
   { key:'payroll',    label:'Payroll',     icon:DollarSign,      roles:['hr_admin','management','employee'] },
   { key:'salary_approvals', label:'Salary Approvals', icon:ClipboardList, roles:['management'] },
 ];
