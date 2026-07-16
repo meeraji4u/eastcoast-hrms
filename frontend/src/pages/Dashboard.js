@@ -277,9 +277,15 @@ function EmployeeDashboard({onNavigate, stats, loading}) {
   
   return (
     <div>
-      <div style={{marginBottom:28}}>
-        <h1 style={{fontSize:22,fontWeight:800,color:'#0b1320'}}>{greeting}, {(user?.name || '').split(' ')[0]}!</h1>
-        <p style={{color:'#64748b',fontSize:14,marginTop:4}}>{now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+      <div style={{marginBottom:28, display:'flex', alignItems:'center', gap:16}}>
+        <div style={{width:64, height:64, borderRadius:'50%', overflow:'hidden', background:'#e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #fff', boxShadow:'0 2px 8px rgba(0,0,0,0.1)', flexShrink:0}}>
+          <img src={`/api/photos/${user?.emp_code}.jpg`} alt="Profile" style={{width:'100%', height:'100%', objectFit:'cover'}} onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
+          <User size={32} color="#94a3b8" style={{display:'none'}} />
+        </div>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:800,color:'#0b1320'}}>{greeting}, {(user?.name || '').split(' ')[0]}!</h1>
+          <p style={{color:'#64748b',fontSize:14,marginTop:4}}>{now.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+        </div>
       </div>
       <div style={{background:'linear-gradient(135deg,#115e59,#1d4ed8)',borderRadius:16,padding:'24px 28px',color:'#fff',marginBottom:24,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
         <div>

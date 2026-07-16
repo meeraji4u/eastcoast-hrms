@@ -6,12 +6,16 @@ from routers import (auth_router, admin_router, attendance_router,
                      shift_router, device_router, gatepass_router,
                      roster_router, report_router, settings_router,
                      debug_router)
-import threading, time, logging
+from fastapi.staticfiles import StaticFiles
+import os, threading, time, logging
 
 logger = logging.getLogger(__name__)
 app = FastAPI(title="EastCoast HRMS API", version="4.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
+
+os.makedirs("photos", exist_ok=True)
+app.mount("/api/photos", StaticFiles(directory="photos"), name="photos")
 
 def nightly_sync():
     while True:

@@ -32,6 +32,8 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env
+    volumes:
+      - ./photos:/app/photos
     environment:
       - POSTGRES_URL=postgresql://hrms:hrms123@postgres:5432/hrmsdb
       - REDIS_URL=redis://redis:6379/0
