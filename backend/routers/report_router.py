@@ -4,11 +4,20 @@ from datetime import date, datetime, timedelta
 from typing import Optional
 from services.auth import get_current_user, require_admin_or_head
 from core.database import essl_query, essl_query_one
-from models.models import User
+from models.models import User, RoleEnum
 import io, logging
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/reports", tags=["Reports"])
+
+def resolve_dept(user: User, requested_dept: Optional[str]) -> Optional[str]:
+    """For dept_head: always return their own department name (ignore requested_dept).
+       For hr_admin/management/it_admin: return requested_dept as-is (None = all depts)."""
+    if user.role == RoleEnum.dept_head:
+        if user.department:
+            return user.department.name
+        return None  # no dept assigned yet, return nothing
+    return requested_dept
 
 def safe_str(v):
     if v is None: return "—"
@@ -31,9 +40,10 @@ def daily_attendance(
 ):
     d = att_date or date.today().isoformat()
     tbl = f"DeviceLogs_{datetime.fromisoformat(d).month}_{datetime.fromisoformat(d).year}"
-    dept_filter = "AND dp.DepartmentFName = ?" if dept else ""
+    effective_dept = resolve_dept(user, dept)
+    dept_filter = "AND dp.DepartmentFName = ?" if effective_dept else ""
     params = [d]
-    if dept: params.append(dept)
+    if effective_dept: params.append(effective_dept)
     try:
         rows = essl_query(f"""
             SELECT e.EmployeeCode, e.EmployeeName,
@@ -70,10 +80,11 @@ def attendance_summary(
     today = date.today()
     fd = from_date or date(today.year, today.month, 1).isoformat()
     td = to_date or today.isoformat()
-    dept_filter = "AND dp.DepartmentFName = ?" if dept else ""
+    effective_dept = resolve_dept(user, dept)
+    dept_filter = "AND dp.DepartmentFName = ?" if effective_dept else ""
     search_filter = "AND (e.EmployeeName LIKE ? OR e.EmployeeCode LIKE ?)" if search else ""
     params = [fd, td]
-    if dept: params.append(dept)
+    if effective_dept: params.append(effective_dept)
     if search: params += [f"%{search}%", f"%{search}%"]
     try:
         rows = essl_query(f"""
@@ -116,9 +127,10 @@ def employee_details(
     status: Optional[str] = None,
     user: User = Depends(require_admin_or_head)
 ):
+    effective_dept = resolve_dept(user, dept)
     filters = "WHERE e.RecordStatus=1"
     params = []
-    if dept: filters += " AND dp.DepartmentFName=?"; params.append(dept)
+    if effective_dept: filters += " AND dp.DepartmentFName=?"; params.append(effective_dept)
     if search: filters += " AND (e.EmployeeName LIKE ? OR e.EmployeeCode LIKE ?)"; params += [f"%{search}%",f"%{search}%"]
     if status: filters += " AND e.Status=?"; params.append(status)
     try:
@@ -180,9 +192,10 @@ def leave_summary(
     today = date.today()
     fd = from_date or date(today.year, 1, 1).isoformat()
     td = to_date or today.isoformat()
-    dept_filter = "AND dp.DepartmentFName=?" if dept else ""
+    effective_dept = resolve_dept(user, dept)
+    dept_filter = "AND dp.DepartmentFName=?" if effective_dept else ""
     params = [fd, td]
-    if dept: params.append(dept)
+    if effective_dept: params.append(effective_dept)
     try:
         rows = essl_query(f"""
             SELECT e.EmployeeCode, e.EmployeeName,
@@ -291,14 +304,15 @@ def get_monthly_status(
     from datetime import date
     from services.attendance import get_attendance_from_logs
     try:
+        effective_dept = resolve_dept(user, dept)
         filters = "WHERE e.RecordStatus=1 AND e.Status='Working'"
         params = []
         if emp_code:
             filters += " AND e.EmployeeCode = ?"
             params.append(emp_code)
-        if dept:
+        if effective_dept:
             filters += " AND dp.DepartmentFName = ?"
-            params.append(dept)
+            params.append(effective_dept)
 
         emp_rows = essl_query(f"""
             SELECT e.EmployeeCode, e.EmployeeName, dp.DepartmentFName AS dept, e.Designation

@@ -44,8 +44,11 @@ def dashboard_stats(user: User = Depends(get_current_user)):
     from datetime import timedelta
     today = date.today()
     two_weeks_ago = today - timedelta(days=14)
+    dept_name = None
+    if user.role == RoleEnum.dept_head and user.department:
+        dept_name = user.department.name
     try:
-        return get_admin_dashboard_stats(two_weeks_ago, today)
+        return get_admin_dashboard_stats(two_weeks_ago, today, dept=dept_name)
     except Exception as e:
         return {"total_employees": 0, "present_today": 0, "absent_today": 0,
                 "on_leave": 0, "dept_stats": [], "trend": [], "error": str(e)}

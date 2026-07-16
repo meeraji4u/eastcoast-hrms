@@ -82,7 +82,9 @@ def login(payload: LoginIn, db: Session = Depends(get_pg_db)):
         "user": {
             "emp_code": user.emp_code, "name": user.name,
             "email": user.email, "role": user.role.value,
-            "dept_id": user.dept_id, "designation": user.designation,
+            "dept_id": user.dept_id,
+            "dept": user.department.name if user.department else None,
+            "designation": user.designation,
         }
     }
 

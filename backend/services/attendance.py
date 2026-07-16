@@ -263,36 +263,51 @@ def get_monthly_summary(emp_code: str, year: int, month: int) -> dict:
         "daily": daily,
     }
 
-def get_admin_dashboard_stats(from_date: date, to_date: date) -> dict:
+def get_admin_dashboard_stats(from_date: date, to_date: date, dept: str = None) -> dict:
     today = date.today()
     today_str = today.strftime('%Y-%m-%d')
     month = today.month
     year = today.year
     tbl = _device_logs_table(year, month)
 
+    dept_join = "LEFT JOIN Departments d ON d.DepartmentId = e.DepartmentId" if dept else ""
+    dept_where = "AND d.DepartmentFName = ?" if dept else ""
+    dept_params = [dept] if dept else []
+
     try:
-        total = essl_query_one("""
-            SELECT COUNT(*) AS cnt FROM Employees WHERE Status='Active' OR Status='1' OR RecordStatus=1
-        """) or {}
+        total = essl_query_one(f"""
+            SELECT COUNT(DISTINCT e.EmployeeCode) AS cnt
+            FROM Employees e
+            {dept_join}
+            WHERE (e.Status='Active' OR e.Status='1' OR e.RecordStatus=1)
+            {dept_where}
+        """, dept_params) or {}
         total_emp = total.get('cnt', 0) or 0
     except Exception:
         total_emp = 0
 
     try:
         present_row = essl_query_one(f"""
-            SELECT COUNT(DISTINCT UserId) AS cnt FROM {tbl}
-            WHERE CAST(LogDate AS DATE) = CAST(GETDATE() AS DATE)
-        """) or {}
+            SELECT COUNT(DISTINCT dl.UserId) AS cnt FROM {tbl} dl
+            JOIN Employees e ON e.EmployeeCode = dl.UserId
+            {dept_join.replace('e.DepartmentId', 'e.DepartmentId')}
+            WHERE CAST(dl.LogDate AS DATE) = CAST(GETDATE() AS DATE)
+            {dept_where}
+        """, dept_params) or {}
         present_today = present_row.get('cnt', 0) or 0
     except Exception:
         present_today = 0
 
     try:
         late_row = essl_query_one(f"""
-            SELECT COUNT(DISTINCT EmployeeId) AS cnt FROM AttendanceLogs
-            WHERE CAST(AttendanceDate AS DATE) = CAST(GETDATE() AS DATE)
-              AND LateBy > 0
-        """) or {}
+            SELECT COUNT(DISTINCT al.EmployeeId) AS cnt
+            FROM AttendanceLogs al
+            JOIN Employees e ON e.EmployeeId = al.EmployeeId
+            {dept_join}
+            WHERE CAST(al.AttendanceDate AS DATE) = CAST(GETDATE() AS DATE)
+              AND al.LateBy > 0
+            {dept_where}
+        """, dept_params) or {}
         late_today = late_row.get('cnt', 0) or 0
     except Exception:
         late_today = 0
@@ -300,6 +315,7 @@ def get_admin_dashboard_stats(from_date: date, to_date: date) -> dict:
     # Department stats
     dept_stats = []
     try:
+        dept_filter_clause = "WHERE d.DepartmentFName = ?" if dept else ""
         dept_stats = essl_query(f"""
             SELECT d.DepartmentFName AS dept,
                    COUNT(DISTINCT e.EmployeeCode) AS total,
@@ -309,9 +325,10 @@ def get_admin_dashboard_stats(from_date: date, to_date: date) -> dict:
                 AND (e.Status='Active' OR e.RecordStatus=1)
             LEFT JOIN {tbl} dl ON dl.UserId = e.EmployeeCode
                 AND CAST(dl.LogDate AS DATE) = CAST(GETDATE() AS DATE)
+            {dept_filter_clause}
             GROUP BY d.DepartmentFName
             ORDER BY d.DepartmentFName
-        """)
+        """, dept_params if dept else [])
     except Exception as e:
         logger.warning(f"Dept stats failed: {e}")
 
@@ -320,13 +337,16 @@ def get_admin_dashboard_stats(from_date: date, to_date: date) -> dict:
     try:
         cur_month_tbl = _device_logs_table(today.year, today.month)
         trend = essl_query(f"""
-            SELECT CAST(LogDate AS DATE) AS att_date,
-                   COUNT(DISTINCT UserId) AS present
-            FROM {cur_month_tbl}
-            WHERE CAST(LogDate AS DATE) BETWEEN ? AND CAST(GETDATE() AS DATE)
-            GROUP BY CAST(LogDate AS DATE)
+            SELECT CAST(dl.LogDate AS DATE) AS att_date,
+                   COUNT(DISTINCT dl.UserId) AS present
+            FROM {cur_month_tbl} dl
+            JOIN Employees e ON e.EmployeeCode = dl.UserId
+            {dept_join}
+            WHERE CAST(dl.LogDate AS DATE) BETWEEN ? AND CAST(GETDATE() AS DATE)
+            {dept_where}
+            GROUP BY CAST(dl.LogDate AS DATE)
             ORDER BY att_date
-        """, [str(from_date)])
+        """, [str(from_date)] + dept_params)
     except Exception as e:
         logger.warning(f"Trend query failed: {e}")
 

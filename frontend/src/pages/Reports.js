@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Download, Search, Filter, RefreshCw, Calendar, Users, ClipboardList, Clock, LogIn, LogOut, QrCode } from 'lucide-react';
+import { FileText, Download, Search, Filter, RefreshCw, Calendar, Users, ClipboardList, Clock, LogIn, LogOut, QrCode, Lock } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import useAuthStore from '../store/authStore';
 
 const API = '/api';
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem('hrms_token')}` });
@@ -46,6 +47,9 @@ const STATUS_COLOR = {
 };
 
 export default function Reports() {
+  const { user } = useAuthStore();
+  const isDeptHead = user?.role === 'dept_head';
+  const myDept = user?.dept || '';  // dept name stored in user object from JWT
   const [active, setActive] = useState('daily-attendance');
   const [data, setData] = useState([]);
   const [summaryData, setSummaryData] = useState(null);
@@ -303,11 +307,17 @@ export default function Reports() {
 
             {!['log-records', 'outdoor-entry'].includes(active) && (
               <div style={fld}>
-                <label style={lbl}>Department</label>
-                <select value={filters.dept} onChange={e=>setFilters(p=>({...p,dept:e.target.value}))} style={inp}>
-                  <option value="">All Departments</option>
-                  {depts.map(d=><option key={d} value={d}>{d}</option>)}
-                </select>
+                <label style={lbl}>Department {isDeptHead && <Lock size={10} style={{marginLeft:4,verticalAlign:'middle'}}/>}</label>
+                {isDeptHead ? (
+                  <div style={{...inp, display:'flex', alignItems:'center', background:'#f8fafc', color:'#374151', fontWeight:600, cursor:'not-allowed', height:36}}>
+                    {myDept || user?.department || 'Your Department'}
+                  </div>
+                ) : (
+                  <select value={filters.dept} onChange={e=>setFilters(p=>({...p,dept:e.target.value}))} style={inp}>
+                    <option value="">All Departments</option>
+                    {depts.map(d=><option key={d} value={d}>{d}</option>)}
+                  </select>
+                )}
               </div>
             )}
 
