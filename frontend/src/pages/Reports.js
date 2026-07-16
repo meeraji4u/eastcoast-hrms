@@ -57,6 +57,7 @@ export default function Reports() {
   const [depts, setDepts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
   const [filters, setFilters] = useState({
     att_date: new Date().toISOString().split('T')[0],
     from_date: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
@@ -70,7 +71,7 @@ export default function Reports() {
   }, []);
 
   const load = async () => {
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setHasSearched(true);
     try {
       const params = new URLSearchParams();
       if (active === 'daily-attendance') params.append('att_date', filters.att_date);
@@ -112,7 +113,14 @@ export default function Reports() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); }, [active]);
+  // Reset data and hasSearched when switching report type — do NOT auto-load
+  useEffect(() => {
+    setData([]);
+    setSummaryData(null);
+    setRawSummaryData(null);
+    setError('');
+    setHasSearched(false);
+  }, [active]);
 
   const exportCSV = () => {
     const cols = COLS[active] || [];
@@ -341,6 +349,12 @@ export default function Reports() {
 
             {loading ? (
               <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>Loading from eSSL...</div>
+            ) : !hasSearched ? (
+              <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>
+                <Filter size={36} style={{ opacity:0.3, marginBottom:10 }}/>
+                <div style={{ fontWeight:600, fontSize:14, marginBottom:6, color:'#64748b' }}>Set your filters above and click Apply</div>
+                <div style={{ fontSize:13 }}>Select a date range and department, then click Apply to load the report.</div>
+              </div>
             ) : data.length === 0 && !error ? (
               <div style={{ padding:60, textAlign:'center', color:'#94a3b8' }}>
                 <FileText size={36} style={{ opacity:0.3, marginBottom:10 }}/>
