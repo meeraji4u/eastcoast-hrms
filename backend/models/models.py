@@ -123,14 +123,39 @@ class Payroll(Base):
     leave_days = Column(Integer, default=0)
     work_hours = Column(Float, default=0)
     ot_hours = Column(Float, default=0)
-    basic_salary = Column(Float, default=0)
+    basic_salary = Column(Float, default=0)   # monthly CTC / gross base
     per_day = Column(Float, default=0)
-    earned = Column(Float, default=0)
+    # Earnings breakdown
+    earned_basic = Column(Float, default=0)   # Basic earned based on present days
+    hra_amount = Column(Float, default=0)
+    da_amount = Column(Float, default=0)
     ot_amount = Column(Float, default=0)
-    deductions = Column(Float, default=0)
+    gross = Column(Float, default=0)          # earned_basic + hra_amount + da_amount + ot_amount
+    # Deductions breakdown
+    pf = Column(Float, default=0)
+    esic = Column(Float, default=0)
+    advance = Column(Float, default=0)
+    other_deductions = Column(Float, default=0)
+    deductions = Column(Float, default=0)     # total deductions
     net_pay = Column(Float, default=0)
     status = Column(String(20), default="draft")  # draft, finalized
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Legacy aliases kept for compatibility
+    earned = Column(Float, default=0)         # same as earned_basic
+
+class PayrollFormula(Base):
+    __tablename__ = "payroll_formulas"
+    id = Column(Integer, primary_key=True)
+    # Earnings percentages (% of CTC)
+    basic_pct = Column(Float, default=60.0)   # Basic = 60% of CTC
+    hra_pct   = Column(Float, default=20.0)   # HRA   = 20% of CTC
+    da_pct    = Column(Float, default=20.0)   # DA    = 20% of CTC
+    # Deductions percentages (% of Basic earned)
+    pf_pct    = Column(Float, default=12.0)   # PF    = 12% of Basic earned
+    esic_pct  = Column(Float, default=0.75)   # ESIC  = 0.75% of Basic earned
+    # OT rate: per hour = (per_day / ot_divisor)
+    ot_hours_divisor = Column(Float, default=8.0)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class AppSetting(Base):
     __tablename__ = "app_settings"
